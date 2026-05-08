@@ -153,6 +153,11 @@ public class Train {
 	// advancements
 	public Player backwardsDriver;
 
+	// 0 = use config
+	public float MaxSpeed = 0;
+	public float MaxTurnSpeed = 0;
+	public float Acceleration = 0;
+
 	private Train(UUID id, UUID owner, List<Carriage> carriages, List<Integer> carriageSpacing, boolean doubleEnded, Component name, TrainIconType icon, int mapColorIndex) {
 		this(id, owner, null, carriages, carriageSpacing, doubleEnded, name, icon, mapColorIndex);
 	}
@@ -1141,18 +1146,33 @@ public class Train {
 	}
 
 	public float maxSpeed() {
-		return (fuelTicks > 0 ? AllConfigs.server().trains.poweredTrainTopSpeed.getF()
-			: AllConfigs.server().trains.trainTopSpeed.getF()) / 20;
+		if (this.MaxSpeed != 0) {
+			return this.MaxSpeed / 20;
+		} else if (fuelTicks > 0) {
+			return AllConfigs.server().trains.poweredTrainTopSpeed.getF() / 20;
+		} else {
+			return AllConfigs.server().trains.trainTopSpeed.getF() / 20;
+		}
 	}
 
 	public float maxTurnSpeed() {
-		return (fuelTicks > 0 ? AllConfigs.server().trains.poweredTrainTurningTopSpeed.getF()
-			: AllConfigs.server().trains.trainTurningTopSpeed.getF()) / 20;
+		if (this.MaxTurnSpeed != 0) {
+			return this.MaxTurnSpeed / 20;
+		} else if (fuelTicks > 0) {
+			return AllConfigs.server().trains.poweredTrainTurningTopSpeed.getF() / 20;
+		} else {
+			return AllConfigs.server().trains.trainTurningTopSpeed.getF() / 20;
+		}
 	}
 
 	public float acceleration() {
-		return (fuelTicks > 0 ? AllConfigs.server().trains.poweredTrainAcceleration.getF()
-			: AllConfigs.server().trains.trainAcceleration.getF()) / 400;
+		if (this.Acceleration != 0) {
+			return this.Acceleration / 400;
+		} else if (fuelTicks > 0) {
+			return AllConfigs.server().trains.poweredTrainAcceleration.getF() / 400;
+		} else {
+			return AllConfigs.server().trains.trainAcceleration.getF() / 400;
+		}
 	}
 
 	public CompoundTag write(DimensionPalette dimensions, HolderLookup.Provider registries) {
@@ -1201,6 +1221,10 @@ public class Train {
 		tag.put("Runtime", runtime.write(registries));
 		tag.put("Navigation", navigation.write(dimensions));
 
+		tag.putFloat("MaxSpeed", MaxSpeed);
+		tag.putFloat("MaxTurnSpeed", MaxTurnSpeed);
+		tag.putFloat("Acceleration", Acceleration);
+
 		return tag;
 	}
 
@@ -1244,6 +1268,10 @@ public class Train {
 
 		train.runtime.read(registries, tag.getCompound("Runtime"));
 		train.navigation.read(tag.getCompound("Navigation"), graph, dimensions);
+
+		train.MaxSpeed = tag.getFloat("MaxSpeed");
+		train.MaxTurnSpeed = tag.getFloat("MaxTurnSpeed");
+		train.Acceleration = tag.getFloat("Acceleration");
 
 		if (train.getCurrentStation() != null)
 			train.getCurrentStation()

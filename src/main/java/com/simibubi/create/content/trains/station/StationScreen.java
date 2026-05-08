@@ -27,6 +27,9 @@ import net.createmod.catnip.animation.AnimationTickHolder;
 import net.createmod.catnip.animation.LerpedFloat;
 import net.createmod.catnip.data.Pair;
 import net.createmod.catnip.gui.UIRenderHelper;
+import net.electrovoyage.customtrainspeeds.ConfigureTrainSpeedPacket;
+import net.electrovoyage.customtrainspeeds.ScrollInputWrapper;
+import net.electrovoyage.customtrainspeeds.speedgetter.TrainSpeedGetterPacket_ServerTargeted;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
@@ -34,6 +37,8 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
+
+import javax.annotation.Nullable;
 
 public class StationScreen extends AbstractStationScreen {
 
@@ -51,6 +56,15 @@ public class StationScreen extends AbstractStationScreen {
 	private int messedWithColors;
 
 	private boolean switchingToAssemblyMode;
+
+	ScrollInputWrapper maxSpeedScroller;
+	ScrollInputWrapper maxTurnSpeedScroller;
+	ScrollInputWrapper accelerationScroller;
+
+	private static @Nullable StationScreen instance;
+	public static @Nullable StationScreen getInstance() {
+		return instance;
+	}
 
 	public StationScreen(StationBlockEntity be, GlobalStation station) {
 		super(be, station);
@@ -135,6 +149,80 @@ public class StationScreen extends AbstractStationScreen {
 			DoorControl.createWidget(x + 35, y + 102, mode -> doorControl = mode, doorControl);
 		addRenderableWidget(doorControlWidgets.getFirst());
 		addRenderableWidget(doorControlWidgets.getSecond());
+
+		maxSpeedScroller = new ScrollInputWrapper(
+			this.guiLeft + 220,
+			//0,
+			this.guiTop + 20,
+			100,
+			10,
+			0,
+			100,
+			Component.literal("Максимальная скорость"),
+			(self) -> self.value() == 0 ? "По умолч." : self.defaultFormatter.apply(self),
+			"%d блоков/с"
+		);
+		maxSpeedScroller.AddRenderable(this);
+		maxSpeedScroller.input.calling(value -> prepareAndSendSpeedValues());
+
+		maxTurnSpeedScroller = new ScrollInputWrapper(
+			this.guiLeft + 220,
+			//0,
+			this.guiTop + 30,
+			100,
+			10,
+			0,
+			100,
+			Component.literal("Максимальная скорость на поворотах"),
+			(self) -> self.value() == 0 ? "По умолч." : self.defaultFormatter.apply(self),
+			"%d блоков/с"
+		);
+		maxTurnSpeedScroller.AddRenderable(this);
+		maxTurnSpeedScroller.input.calling(value -> prepareAndSendSpeedValues());
+
+		accelerationScroller = new ScrollInputWrapper(
+			this.guiLeft + 220,
+			//0,
+			this.guiTop + 40,
+			100,
+			10,
+			0,
+			100,
+			Component.literal("Ускорение"),
+			(self) -> self.value() == 0 ? "По умолч." : self.defaultFormatter.apply(self),
+			"%d блоков/с^2"
+		);
+		accelerationScroller.AddRenderable(this);
+		accelerationScroller.input.calling(value -> prepareAndSendSpeedValues());
+
+		Train train = displayedTrain.get();
+		if (train != null) {
+			TrainSpeedGetterPacket_ServerTargeted packet = new TrainSpeedGetterPacket_ServerTargeted(
+				train.id
+			);
+			CatnipServices.NETWORK.sendToServer(packet);
+		}
+
+		instance = this;
+	}
+
+	public void setSpeedValues(int MaxSpeed, int MaxTurnSpeed, int Acceleration) {
+		maxSpeedScroller.input.setState(MaxSpeed);
+		maxTurnSpeedScroller.input.setState(MaxTurnSpeed);
+		accelerationScroller.input.setState(Acceleration);
+	}
+
+	private void prepareAndSendSpeedValues() {
+		Train train = displayedTrain.get();
+		if (train != null) {
+			ConfigureTrainSpeedPacket packet = new ConfigureTrainSpeedPacket(
+				maxSpeedScroller.value(),
+				maxTurnSpeedScroller.value(),
+				accelerationScroller.value(),
+				train.id
+			);
+			CatnipServices.NETWORK.sendToServer(packet);
+		}
 	}
 
 	@Override
@@ -286,6 +374,17 @@ public class StationScreen extends AbstractStationScreen {
 
 		graphics.renderItem(AllBlocks.TRAIN_DOOR.asStack(), x + 14, y + 103);
 
+		Train _displayedTrain = this.displayedTrain.get();
+		boolean hasTrain = _displayedTrain != null;
+
+		maxSpeedScroller.visible(hasTrain);
+		maxTurnSpeedScroller.visible(hasTrain);
+		accelerationScroller.visible(hasTrain);
+
+		maxSpeedScroller.Render(graphics);
+		maxTurnSpeedScroller.Render(graphics);
+		accelerationScroller.Render(graphics);
+
 		Train train = displayedTrain.get();
 		if (train == null) {
 			MutableComponent header = CreateLang.translateDirect("station.idle");
@@ -416,6 +515,7 @@ public class StationScreen extends AbstractStationScreen {
 
 	@Override
 	public void removed() {
+		instance = null;
 		super.removed();
 		if (nameBox == null || trainNameBox == null)
 			return;

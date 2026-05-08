@@ -113,6 +113,9 @@ import com.simibubi.create.infrastructure.debugInfo.ServerDebugInfoPacket;
 
 import net.createmod.catnip.net.base.BasePacketPayload;
 import net.createmod.catnip.net.base.CatnipPacketRegistry;
+import net.electrovoyage.customtrainspeeds.ConfigureTrainSpeedPacket;
+import net.electrovoyage.customtrainspeeds.speedgetter.TrainSpeedGetterPacket_ClientTargeted;
+import net.electrovoyage.customtrainspeeds.speedgetter.TrainSpeedGetterPacket_ServerTargeted;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -234,7 +237,14 @@ public enum AllPackets implements BasePacketPayload.PacketTypeProvider {
 	KNOCKBACK(KnockbackPacket.class, KnockbackPacket.STREAM_CODEC),
 	TRAIN_MAP_SYNC(TrainMapSyncPacket.class, TrainMapSyncPacket.STREAM_CODEC),
 	CLIENTBOUND_CHAIN_CONVEYOR(ClientboundChainConveyorRidingPacket.class, ClientboundChainConveyorRidingPacket.STREAM_CODEC),
-	SHOP_UPDATE(ShopUpdatePacket.class, ShopUpdatePacket.STREAM_CODEC);;
+	SHOP_UPDATE(ShopUpdatePacket.class, ShopUpdatePacket.STREAM_CODEC),
+
+	// to server
+	TRAIN_SPEED_EDIT(ConfigureTrainSpeedPacket.class, ConfigureTrainSpeedPacket.STREAM_CODEC),
+	TRAIN_GETSPEED_TOSERVER(TrainSpeedGetterPacket_ServerTargeted.class, TrainSpeedGetterPacket_ServerTargeted.STREAM_CODEC),
+
+	// to client
+	TRAIN_GETSPEED_TOCLIENT(TrainSpeedGetterPacket_ClientTargeted.class, TrainSpeedGetterPacket_ClientTargeted.STREAM_CODEC);
 
 	private final CatnipPacketRegistry.PacketType<?> type;
 
