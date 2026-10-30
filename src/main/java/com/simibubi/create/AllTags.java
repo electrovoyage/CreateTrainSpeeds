@@ -207,6 +207,8 @@ public class AllTags {
 		VALVE_HANDLES,
 		DISPENSE_BEHAVIOR_WRAP_BLACKLIST,
 
+		WRENCH,
+
 		OBSIDIAN_DUST(COMMON, "dusts/obsidian"),
 
 		PLATES(COMMON),
